@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+
 import requests
-import psycopg2
-from psycopg2 import Error
+from sqlalchemy import create_engine
 
 weatherResponse = requests.get("http://api.openweathermap.org/data/2.5/forecast?id=524901&appid=d76175a7e71fcaf018227f7c3af4106a")
 
@@ -31,12 +31,13 @@ class Weather:
 
 weatherObj =  Weather(weatherJson)
 
-conn = psycopg2.connect("host=localhost dbname=postgres user=postgres password=lol123")
-cur = conn.cursor()
-cur.execute("""
+db_uri = "postgres://postgres:lol123@localhost:5432/postgres"
+engine = create_engine(db_uri)
+
+engine.execute("""
     DROP TABLE IF EXISTS temperature
 """)
-cur.execute("""
+engine.execute("""
     CREATE TABLE temperature(
     city text,
     time timestamp,
@@ -45,9 +46,12 @@ cur.execute("""
 """)
 
 for key,values in weatherObj.weatherTemp.items():
-    cur.execute("INSERT INTO temperature VALUES (%s, %s, %s)", (weatherObj.weatherCity['name'], key,weatherObj.weatherTemp[key]['temp']))
+    engine.execute("INSERT INTO temperature VALUES (%s, %s, %s)", (weatherObj.weatherCity['name'], key,weatherObj.weatherTemp[key]['temp']))
+    
 
-conn.commit()
+result_set = engine.execute("SELECT * FROM temperature")
+for r in result_set:
+    print(r)
 
 
 
